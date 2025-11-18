@@ -29,6 +29,9 @@ UPDATE emp_frag SET emp_addr = RPAD('Z', 2900, 'Z') WHERE emp_id = 3;
 COMMIT;
 
 METHOD–1: Detect Fragmentation Using CHAINED_ROWS:-------
+
+@?/rdbms/admin/utlchain.sql
+
 ANALYZE TABLE emp_frag LIST CHAINED ROWS INTO chained_rows;
 Check fragmented rows:-----
 SELECT owner_name, table_name, head_rowid 
@@ -93,4 +96,5 @@ ALTER TABLE emp_frag MOVE;
 TRUNCATE TABLE chained_rows;
 
 Solution–4: Increase PCTFREE:--
+
 ALTER TABLE emp_frag PCTFREE 20;
