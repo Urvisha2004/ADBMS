@@ -1,0 +1,120 @@
+CREATE TABLE customer (
+    cust_id NUMBER,
+    cust_name VARCHAR2(50),
+    city VARCHAR2(50)
+)
+storage (initial 1k next 10k minextents 1 maxextents 5);
+
+
+INSERT INTO customer VALUES (1, 'urvisha', 'RAJKOT');
+INSERT INTO customer VALUES (2, 'hetvi', 'AHMEDABAD');
+INSERT INTO customer VALUES (3, 'vishal', 'RAJKOT');
+COMMIT;
+
+
+
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    --------------------------------------------------------------------
+    -- CUSTOM TABLE CREATION
+    --------------------------------------------------------------------
+    -- Custom Record for Customer
+    TYPE customer_rec IS RECORD(
+        cust_id     NUMBER,
+        cust_name   VARCHAR2(50)
+    );
+
+    -- Custom Table (Collection)
+    TYPE customer_table IS TABLE OF customer_rec;
+
+    -- Variable to store all fetched rows
+    v_customer_list customer_table := customer_table();
+
+
+    --------------------------------------------------------------------
+    -- DBMS_SQL Variables
+    --------------------------------------------------------------------
+    v_cursor_id   NUMBER;
+    v_sql         VARCHAR2(200);
+    v_cust_id     NUMBER;
+    v_cust_name   VARCHAR2(50);
+    v_status      NUMBER;
+    i             NUMBER := 0;
+
+BEGIN
+    --------------------------------------------------------------------
+    -- Step 1: Build Dynamic Query
+    --------------------------------------------------------------------
+    v_sql := 'SELECT cust_id, cust_name FROM customer WHERE city = :city';
+
+
+    --------------------------------------------------------------------
+    -- Step 2: Open Cursor
+    --------------------------------------------------------------------
+    v_cursor_id := DBMS_SQL.OPEN_CURSOR;
+
+
+    --------------------------------------------------------------------
+    -- Step 3: Parse SQL
+    --------------------------------------------------------------------
+    DBMS_SQL.PARSE(v_cursor_id, v_sql, DBMS_SQL.NATIVE);
+
+
+    --------------------------------------------------------------------
+    -- Step 4: Bind city dynamically
+    --------------------------------------------------------------------
+    DBMS_SQL.BIND_VARIABLE(v_cursor_id, ':city', 'RAJKOT');
+
+
+    --------------------------------------------------------------------
+    -- Step 5: Define columns
+    --------------------------------------------------------------------
+    DBMS_SQL.DEFINE_COLUMN(v_cursor_id, 1, v_cust_id);
+    DBMS_SQL.DEFINE_COLUMN(v_cursor_id, 2, v_cust_name, 50);
+
+
+    --------------------------------------------------------------------
+    -- Step 6: Execute
+    --------------------------------------------------------------------
+    v_status := DBMS_SQL.EXECUTE(v_cursor_id);
+
+
+    --------------------------------------------------------------------
+    -- Step 7: Fetch rows into CUSTOM TABLE
+    --------------------------------------------------------------------
+    LOOP
+        EXIT WHEN DBMS_SQL.FETCH_ROWS(v_cursor_id) = 0;
+
+        DBMS_SQL.COLUMN_VALUE(v_cursor_id, 1, v_cust_id);
+        DBMS_SQL.COLUMN_VALUE(v_cursor_id, 2, v_cust_name);
+
+        i := i + 1;
+        v_customer_list.EXTEND;
+
+        v_customer_list(i).cust_id   := v_cust_id;
+        v_customer_list(i).cust_name := v_cust_name;
+    END LOOP;
+
+
+    --------------------------------------------------------------------
+    -- Step 8: Close Cursor
+    --------------------------------------------------------------------
+    DBMS_SQL.CLOSE_CURSOR(v_cursor_id);
+
+
+    --------------------------------------------------------------------
+    -- Step 9: Display CUSTOM TABLE DATA
+    --------------------------------------------------------------------
+    DBMS_OUTPUT.PUT_LINE('--- CUSTOM TABLE (CUSTOMER) OUTPUT ---');
+
+    FOR j IN 1 .. v_customer_list.COUNT LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            'Customer ID: ' || v_customer_list(j).cust_id ||
+            ' | Name: ' || v_customer_list(j).cust_name
+        );
+    END LOOP;
+
+END;
+/
