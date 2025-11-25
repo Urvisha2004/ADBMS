@@ -1,0 +1,57 @@
+create table book (
+    bid number primary key,
+    title   varchar2(100)
+)
+tablespace stud
+storage(initial 1k
+	next 3k
+	minextents 1
+	maxextents 5
+);
+___
+
+create or replace procedure add_book_job AS
+begin
+    insert into book values (101, 'Coding art');
+    insert into book values (102, 'oracle mastery');
+    insert into book values (103, 'satyana paryogo');
+    insert into book values (104, 'one Indian girl');
+    insert into book values (105, 'RDBMS');
+
+    commit;
+
+    DBMS_OUTPUT.PUT_LINE('5 new books inserted into book using DBMS_JOB');
+END;
+/
+
+--Submit Job Using DBMS_JOB
+---------------------------
+set serveroutput on;
+
+declare
+    v_job NUMBER;
+begin
+    DBMS_JOB.SUBMIT(
+        job       => v_job,
+        what      => 'add_book_job;',
+        next_date => SYSDATE,
+        interval  => 'NULL'
+    );
+
+    COMMIT;
+
+    DBMS_OUTPUT.PUT_LINE('Job created successfully. Job No = ' || v_job);
+END;
+/
+
+-- Run Job Manually (optional)
+BEGIN
+    DBMS_JOB.RUN(241); 
+END;
+/
+-- Check All Jobs
+select job, what, next_date, interval from user_jobs;
+
+-- Verify Data Inserted
+
+select * from book;

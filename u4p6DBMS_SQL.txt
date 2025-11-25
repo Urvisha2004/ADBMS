@@ -1,56 +1,76 @@
+OPEN_CURSOR	Opens a cursor and returns cursor id
+PARSE	Parses a SQL statement
+BIND_VARIABLE	Binds values to placeholders
+EXECUTE	Executes the parsed cursor
+FETCH_ROWS	Fetches rows from cursor
+COLUMN_VALUE	Retrieves column value for each row
+CLOSE_CURSOR	Closes the cursor
 
-CREATE TABLE empss (
-    empssno NUMBER,
-    ename VARCHAR2(50),
-    deptno NUMBER
+create table course (
+    cid number PRIMARY KEY,
+    cname varchar2(50),
+    duration number
 )
-storage (initial 1k next 10k minextents 1 maxextents 5)
-;
+tablespace stud
+storage(initial 1k
+	next 3k
+	minextents 1
+	maxextents 5
+);
+_________________________________
+set serveroutput on;
 
-INSERT INTO empss VALUES (101, 'ANKESH', 10);
-INSERT INTO empss VALUES (102, 'JAYESH', 20);
-INSERT INTO empss VALUES (103, 'PARTH', 10);
-COMMIT;
-===============================================================================
-SET SERVEROUTPUT ON;
+declare
+    v_cursor   integer;
+    v_rows     integer;
 
-DECLARE
-    v_cursor_id   NUMBER;         -- Cursor handle
-    v_query       VARCHAR2(200);  -- Dynamic SQL query
-    v_empssno       NUMBER;         -- Output variable
-    v_ename       VARCHAR2(50);   -- Output variable
-    v_status      NUMBER;         -- Execution status
+    v_sql_insert  varchar2(200);
+    v_sql_select  varchar2(200);
+
+    v_cid      number;
+    v_cname    varchar2(50);
+    v_duration number;
+
 BEGIN
-    -- Step 1: Build SQL query dynamically
-    v_query := 'SELECT empssno, ename FROM empss WHERE deptno = :deptno';
+    v_sql_insert := 'insert into course (cid, cname, duration)
+                     values (101, ''adbms'', 30)';
 
-    -- Step 2: Open a cursor
-    v_cursor_id := DBMS_SQL.OPEN_CURSOR;
+    v_cursor := DBMS_SQL.OPEN_CURSOR;
+    DBMS_SQL.PARSE(v_cursor, v_sql_insert, DBMS_SQL.NATIVE);
+    v_rows := DBMS_SQL.EXECUTE(v_cursor);
+    DBMS_SQL.CLOSE_CURSOR(v_cursor);
 
-    -- Step 3: Parse the SQL statement
-    DBMS_SQL.PARSE(v_cursor_id, v_query, DBMS_SQL.NATIVE);
+    DBMS_OUTPUT.PUT_LINE('Insert Successful. Rows inserted = ' || v_rows);
 
-    -- Step 4: Bind the variable
-    DBMS_SQL.BIND_VARIABLE(v_cursor_id, ':deptno', 10);
+    -- SELECT using DBMS_SQL
 
-    -- Step 5: Define columns to fetch
-    DBMS_SQL.DEFINE_COLUMN(v_cursor_id, 1, v_empssno);
-    DBMS_SQL.DEFINE_COLUMN(v_cursor_id, 2, v_ename, 50);
 
-    -- Step 6: Execute the statement
-    v_status := DBMS_SQL.EXECUTE(v_cursor_id);
+    v_sql_select := 'select cid, cname, duration 
+                     from course where cid = 101';
 
-    -- Step 7: Fetch and display rows
-    LOOP
-        EXIT WHEN DBMS_SQL.FETCH_ROWS(v_cursor_id) = 0;
-        DBMS_SQL.COLUMN_VALUE(v_cursor_id, 1, v_empssno);
-        DBMS_SQL.COLUMN_VALUE(v_cursor_id, 2, v_ename);
-        DBMS_OUTPUT.PUT_LINE('empss No: ' || v_empssno || ' | Name: ' || v_ename);
-    END LOOP;
+    v_cursor := DBMS_SQL.OPEN_CURSOR;
+    DBMS_SQL.PARSE(v_cursor, v_sql_select, DBMS_SQL.NATIVE);
 
-    -- Step 8: Close cursor
-    DBMS_SQL.CLOSE_CURSOR(v_cursor_id);
+  -- define
+    DBMS_SQL.DEFINE_COLUMN(v_cursor, 1, v_cid);
+    DBMS_SQL.DEFINE_COLUMN(v_cursor, 2, v_cname, 50);
+    DBMS_SQL.DEFINE_COLUMN(v_cursor, 3, v_duration);
 
+   -- execute
+   v_rows := DBMS_SQL.EXECUTE(v_cursor);
+
+    IF DBMS_SQL.FETCH_ROWS(v_cursor) > 0 THEN
+        DBMS_SQL.COLUMN_VALUE(v_cursor, 1, v_cid);
+        DBMS_SQL.COLUMN_VALUE(v_cursor, 2, v_cname);
+        DBMS_SQL.COLUMN_VALUE(v_cursor, 3, v_duration);
+
+        DBMS_OUTPUT.PUT_LINE('--- Selected Course ---');
+        DBMS_OUTPUT.PUT_LINE('CID      : ' || v_cid);
+        DBMS_OUTPUT.PUT_LINE('CName    : ' || v_cname);
+        DBMS_OUTPUT.PUT_LINE('Duration : ' || v_duration);
+    END IF;
+
+    DBMS_SQL.CLOSE_CURSOR(v_cursor);
 
 END;
 /
