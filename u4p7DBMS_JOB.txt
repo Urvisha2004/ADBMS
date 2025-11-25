@@ -1,54 +1,55 @@
-Practical-17
-------------
-- Put your job for insert new five records into student database using DBMS_JOB package.
+CREATE TABLE hr_table (
+    emp_id NUMBER PRIMARY KEY,
+    emp_name VARCHAR2(50)
+)
+STORAGE (
+    INITIAL 64K,
+    NEXT 64K,
+    MINEXTENTS 1,
+    MAXEXTENTS 10,
+    PCTINCREASE 0
+);
 
-CREATE TABLE student (
-    student_id   NUMBER PRIMARY KEY,
-    name         VARCHAR2(50),
-    marks        NUMBER
-)storage (initial 2k next 5k minextents 1 maxextents 5);
---------------------------------------------------------------------------------------------------------
-CREATE SEQUENCE student_seq START WITH 1 INCREMENT BY 1;
-------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE PROCEDURE insert_students_job AS
-BEGIN
-    INSERT INTO student (student_id, name, marks) VALUES (student_seq.NEXTVAL, 'Ankesh', 95);
-    INSERT INTO student (student_id, name, marks) VALUES (student_seq.NEXTVAL, 'Jayesh', 90);
-    INSERT INTO student (student_id, name, marks) VALUES (student_seq.NEXTVAL, 'Parth', 78);
-    INSERT INTO student (student_id, name, marks) VALUES (student_seq.NEXTVAL, 'Ram', 92);
-    INSERT INTO student (student_id, name, marks) VALUES (student_seq.NEXTVAL, 'Krishn', 88);
-    
-    COMMIT;
-END;
-/
---------------------------------[FOR ONLY ONE TIME]--------------------------------------------------------
+SELECT * FROM hr_table;
+
+
+SET SERVEROUTPUT ON;
+
 DECLARE
-    job_no NUMBER;
+    job_number NUMBER;
 BEGIN
     DBMS_JOB.SUBMIT(
-        job       => job_no,
-        what      => 'BEGIN insert_students_job; END;',
+        job => job_number,
+        what => 'BEGIN
+                    INSERT INTO hr_table (emp_id, emp_name) VALUES (1, ''John'');
+                    INSERT INTO hr_table (emp_id, emp_name) VALUES (2, ''Alice'');
+                    INSERT INTO hr_table (emp_id, emp_name) VALUES (3, ''Robert'');
+                    INSERT INTO hr_table (emp_id, emp_name) VALUES (4, ''Sara'');
+                    INSERT INTO hr_table (emp_id, emp_name) VALUES (5, ''Michael'');
+                    COMMIT;
+                 END;',
         next_date => SYSDATE,
-        interval  => 'NULL'  -- run only once
+        interval => NULL
     );
+
     COMMIT;
-    
-    DBMS_OUTPUT.PUT_LINE('Job created with JOB ID: ' || job_no);
+    DBMS_OUTPUT.PUT_LINE('Job submitted with job number: ' || job_number);
 END;
 /
-============================[for every day]=========================================
-DECLARE
-    job_no NUMBER;
+----------------------------------------
+SELECT job, what, next_date, interval, broken
+FROM user_jobs;
+
+
 BEGIN
-    DBMS_JOB.SUBMIT(
-        job       => job_no,
-        what      => 'BEGIN insert_students_job; END;',
-        next_date => SYSDATE,
-        interval  => 'SYSDATE + 1'  -- run every day
-    );
-    COMMIT;
-    DBMS_OUTPUT.PUT_LINE('Job created with JOB ID: ' || job_no);
+    DBMS_JOB.RUN(1);   -- run job number 1
 END;
 /
------------------------------------------------------------------
-select * from student;
+
+SELECT * FROM hr_table ORDER BY emp_id;
+
+BEGIN
+    DBMS_JOB.REMOVE(1);
+    COMMIT;
+END;
+/
