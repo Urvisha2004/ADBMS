@@ -32,36 +32,35 @@ Step 4: Create Procedure (Insert / Update / Delete)
 CREATE OR REPLACE PROCEDURE manage_accounts_varray(
     p_cust_id   IN NUMBER,
     p_action    IN VARCHAR2,
-    p_position  IN NUMBER DEFAULT NULL,   -- position in array (for update/delete)
+    p_position  IN NUMBER,
     p_acct_no   IN NUMBER DEFAULT NULL,
     p_balance   IN NUMBER DEFAULT NULL
 ) IS
     v_accounts account_varray;
 BEGIN
-    -- Fetch varray for given customer
-    SELECT accounts INTO v_accounts
+    SELECT accounts
+    INTO v_accounts
     FROM customer_accounts
     WHERE cust_id = p_cust_id
     FOR UPDATE;
 
-    -- Insert New Account
+    -- INSERT (place data in empty position)
     IF p_action = 'INSERT' THEN
-        v_accounts.EXTEND;
-        v_accounts(v_accounts.LAST) := account_obj(p_acct_no, p_balance);
-
-    -- Update existing Account
-    ELSIF p_action = 'UPDATE' THEN
         v_accounts(p_position) := account_obj(p_acct_no, p_balance);
 
-    -- Delete an account from position
+    -- UPDATE existing account
+    ELSIF p_action = 'UPDATE' THEN
+        v_accounts(p_position).account_no := p_acct_no;
+        v_accounts(p_position).balance := p_balance;
+
+    -- DELETE (shift left & set last to NULL)
     ELSIF p_action = 'DELETE' THEN
-        FOR i IN p_position .. v_accounts.COUNT-1 LOOP
+        FOR i IN p_position .. 4 LOOP
             v_accounts(i) := v_accounts(i+1);
         END LOOP;
-        v_accounts.TRIM;
+        v_accounts(5) := NULL;
     END IF;
 
-    -- Save back
     UPDATE customer_accounts
     SET accounts = v_accounts
     WHERE cust_id = p_cust_id;
@@ -69,17 +68,17 @@ BEGIN
     COMMIT;
 END;
 /
+
 -------------------------
 Step 5: Test the Procedure
--- Insert new account for Ramesh
-EXEC manage_accounts_varray(1, 'INSERT', NULL, 103, 15000);
+🔹 Insert new account at position 3
+EXEC manage_accounts_varray(1, 'INSERT', 3, 103, 15000);
 
--- Update 2nd account
-EXEC manage_accounts_varray(1, 'UPDATE',  , 102, 20000);
+🔹 Update 2nd account
+EXEC manage_accounts_varray(1, 'UPDATE', 2, 102, 20000);
 
--- Delete 1st account of Ramesh
+🔹 Delete 1st account
 EXEC manage_accounts_varray(1, 'DELETE', 1);
-
 
 
 
