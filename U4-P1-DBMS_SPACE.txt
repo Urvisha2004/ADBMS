@@ -27,98 +27,47 @@ Last extent block id : 376
 Last used block      : 8
 
 ----------------------------------------------------------------------------------
-2.DBMS_SPACE.SPACE_USAGE
-_______________________
-
-
+________________________________________________________
+-- Enable output
 SET SERVEROUTPUT ON;
 
 DECLARE
-  v_unformatted_blocks NUMBER;
-  v_unformatted_bytes  NUMBER;
-  v_fs1_blocks         NUMBER;
-  v_fs1_bytes          NUMBER;
-  v_fs2_blocks         NUMBER;
-  v_fs2_bytes          NUMBER;
-  v_fs3_blocks         NUMBER;
-  v_fs3_bytes          NUMBER;
-  v_fs4_blocks         NUMBER;
-  v_fs4_bytes          NUMBER;
-  v_full_blocks        NUMBER;
-  v_full_bytes         NUMBER;
+    total_blocks     NUMBER;
+    total_bytes      NUMBER;
+    unused_blocks    NUMBER;
+    unused_bytes     NUMBER;
+    last_used_ext    NUMBER;
+    last_used_block  NUMBER;
+    last_block       NUMBER;
+    avg_space        NUMBER;  -- Average space per block
 BEGIN
-  DBMS_SPACE.SPACE_USAGE (
-    segment_owner      => 'MCA11',
-    segment_name       => 'ARTIST',
-    segment_type       => 'TABLE',
-    unformatted_blocks => v_unformatted_blocks,
-    unformatted_bytes  => v_unformatted_bytes,
-    fs1_blocks         => v_fs1_blocks,
-    fs1_bytes          => v_fs1_bytes,
-    fs2_blocks         => v_fs2_blocks,
-    fs2_bytes          => v_fs2_bytes,
-    fs3_blocks         => v_fs3_blocks,
-    fs3_bytes          => v_fs3_bytes,
-    fs4_blocks         => v_fs4_blocks,
-    fs4_bytes          => v_fs4_bytes,
-    full_blocks        => v_full_blocks,
-    full_bytes         => v_full_bytes
-  );
+    -- Check fragmentation for the table DEMO owned by MCA11
+    DBMS_SPACE.UNUSED_SPACE_FULL(
+        segment_owner          => 'MCA11',
+        segment_name           => 'DEMO',
+        segment_type           => 'TABLE',
+        total_blocks           => total_blocks,
+        total_bytes            => total_bytes,
+        unused_blocks          => unused_blocks,
+        unused_bytes           => unused_bytes,
+        last_used_extent_file_id => last_used_ext,
+        last_used_block_id       => last_used_block,
+        last_used_block          => last_block,
+        avg_space                => avg_space
+    );
 
-  DBMS_OUTPUT.PUT_LINE('Unformatted Blocks = ' || v_unformatted_blocks);
-  DBMS_OUTPUT.PUT_LINE('FS1 Blocks (0-25%) = ' || v_fs1_blocks);
-  DBMS_OUTPUT.PUT_LINE('FS2 Blocks (25-50%) = ' || v_fs2_blocks);
-  DBMS_OUTPUT.PUT_LINE('FS3 Blocks (50-75%) = ' || v_fs3_blocks);
-  DBMS_OUTPUT.PUT_LINE('FS4 Blocks (75-100%) = ' || v_fs4_blocks);
-  DBMS_OUTPUT.PUT_LINE('Full Blocks = ' || v_full_blocks);
+    -- Display results
+    DBMS_OUTPUT.PUT_LINE('===== Fragmentation Report =====');
+    DBMS_OUTPUT.PUT_LINE('Table: DEMO');
+    DBMS_OUTPUT.PUT_LINE('Total Blocks: ' || total_blocks);
+    DBMS_OUTPUT.PUT_LINE('Unused Blocks: ' || unused_blocks);
+    DBMS_OUTPUT.PUT_LINE('Total Bytes: ' || total_bytes);
+    DBMS_OUTPUT.PUT_LINE('Unused Bytes: ' || unused_bytes);
+    DBMS_OUTPUT.PUT_LINE('Average Space per Block: ' || avg_space || ' bytes');
+    DBMS_OUTPUT.PUT_LINE('Fragmentation %: ' || ROUND((unused_blocks / total_blocks) * 100, 2) || '%');
 END;
 /
- output:-
-Unformatted Blocks = 0
-FS1 Blocks (0-25%) = 0
-FS2 Blocks (25-50%) = 0
-FS3 Blocks (50-75%) = 0
-FS4 Blocks (75-100%) = 2
-Full Blocks = 3
 
-
-________________________________________________________
-SET SERVEROUTPUT ON
-
-DECLARE
-  total_blocks     NUMBER;
-  total_bytes      NUMBER;
-  unused_blocks    NUMBER;
-  unused_bytes     NUMBER;
-  last_used_ext    NUMBER;
-  last_used_block  NUMBER;
-  last_block       NUMBER;
-  avg_space        NUMBER;  -- required for UNUSED_SPACE_FULL
-BEGIN
-  DBMS_SPACE.UNUSED_SPACE_FULL(
-    segment_owner      => 'MCA11',
-    segment_name       => 'DEMO',
-    segment_type       => 'TABLE',
-    total_blocks       => total_blocks,
-    total_bytes        => total_bytes,
-    unused_blocks      => unused_blocks,
-    unused_bytes       => unused_bytes,
-    last_used_extent_file_id => last_used_ext,
-    last_used_block_id       => last_used_block,
-    last_used_block          => last_block,
-    avg_space                => avg_space
-  );
-
-  DBMS_OUTPUT.PUT_LINE('===== Fragmentation Report =====');
-  DBMS_OUTPUT.PUT_LINE('Table: EMPLOYEE');
-  DBMS_OUTPUT.PUT_LINE('Total Blocks: ' || total_blocks);
-  DBMS_OUTPUT.PUT_LINE('Unused Blocks: ' || unused_blocks);
-  DBMS_OUTPUT.PUT_LINE('Total Bytes: ' || total_bytes);
-  DBMS_OUTPUT.PUT_LINE('Unused Bytes: ' || unused_bytes);
-  DBMS_OUTPUT.PUT_LINE('Average Space per Block: ' || avg_space || ' bytes');
-  DBMS_OUTPUT.PUT_LINE('Fragmentation %: ' || ROUND((unused_blocks/total_blocks)*100,2) || '%');
-END;
-/
 ----------------------------------------------------------------------------
 ----------------------------------------------------------------------
 VARIABLE total_blocks NUMBER;
@@ -152,6 +101,37 @@ PRINT unused_bytes;
 PRINT lastextf;
 PRINT last_extb;
 PRINT lastusedblock;
+
+___________________________________________________________
+-- PL/SQL Block to check table fragmentation
+DECLARE
+    l_total_blocks       NUMBER;
+    l_total_bytes        NUMBER;
+    l_unused_blocks      NUMBER;
+    l_unused_bytes       NUMBER;
+    l_chain_row_count    NUMBER;
+BEGIN
+    -- Check space usage and chained rows
+    DBMS_SPACE.UNUSED_SPACE(
+        segment_owner     => 'MCA11',        -- replace with your schema
+        segment_name      => 'STUDENT',
+        segment_type      => 'TABLE',
+        total_blocks      => l_total_blocks,
+        total_bytes       => l_total_bytes,
+        unused_blocks     => l_unused_blocks,
+        unused_bytes      => l_unused_bytes,
+        chain_row_count   => l_chain_row_count
+    );
+
+    DBMS_OUTPUT.PUT_LINE('Table Name           : STUDENT');
+    DBMS_OUTPUT.PUT_LINE('Total Blocks         : ' || l_total_blocks);
+    DBMS_OUTPUT.PUT_LINE('Total Bytes          : ' || l_total_bytes);
+    DBMS_OUTPUT.PUT_LINE('Unused Blocks        : ' || l_unused_blocks);
+    DBMS_OUTPUT.PUT_LINE('Unused Bytes         : ' || l_unused_bytes);
+    DBMS_OUTPUT.PUT_LINE('Chained / Migrated Rows : ' || l_chain_row_count);
+END;
+/
+
 
 
 
