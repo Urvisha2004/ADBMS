@@ -4,6 +4,11 @@ Shared Pool Hit Ratio=(1−Total ParsesSession Cursor Cache Misses + Ha
 Pins = number of times an object (SQL/PLSQL) was executed.
 PinHits = number of times Oracle found it already in cache.
 
+SELECT name, value
+FROM v$librarycache
+WHERE name IN ('Pins', 'Reloads');  -- optional if you want clarity
+
+
 
 SELECT 
     ROUND(
@@ -84,26 +89,7 @@ Retries = 500
 Hit Ratio = (1 - (500 / 200000)) × 100 = 99.75% ✅ Excellent
 _______________________________________________________________________________________________________________________________
 1.shared pool (library cache ) hitratio
- formula:-
-Hit Ratio=PINSPINS−RELOADS​
-SELECT (SUM(PINS - RELOADS)) / SUM(PINS) AS "Library Cache Hit Ratio"
-FROM V$LIBRARYCACHE;
-PINS → number of times an item (SQL statement or PL/SQL object) was executed.
-
-RELOADS → number of times an item was not found in cache and had to be reloaded.
-
-example:-
-SELECT 
-    ROUND((SUM(PINS - RELOADS) / SUM(PINS)) * 100, 2) AS "Shared Pool (Library Cache) Hit Ratio (%)"
-FROM V$LIBRARYCACHE;
-
-
-if required increase 
-
-increase SHARED_POOL_SIZE
-ALTER SYSTEM SET SHARED_POOL_SIZE = 300M SCOPE=BOTH;
-
-SQL> SHOW PARAMETER SHARED_POOL_SIZE;
+	
 
 NAME                                 TYPE        VALUE
 ------------------------------------ ----------- ------------------------------
@@ -121,6 +107,8 @@ SQL>
 
 -------------------------------------------------------------------------------------------
 2.redo log buffer hit ratio:-
+Redo Log Hit Ratio is the percentage of redo log requests that are satisfied from the redo log buffer without waiting for disk writes.
+Redo is generated for every INSERT, UPDATE, DELETE
 Redo Log Allocation Hit Ratio=(1−Redo EntriesRedo Log Space Requests​)×100
 Redo Log Allocation Hit Ratio = (1 - (Redo Log Space Requests / Redo Entries)) * 100
 
