@@ -1,5 +1,12 @@
 cache hit=memry read
 cache miss=disk reads
+
+SELECT name, value
+FROM v$sysstat
+WHERE name IN ('db block gets', 'consistent gets', 'physical reads');
+
+Hit Ratio is the percentage of requests that are satisfied from memory (cache) without accessing the disk.
+
 SELECT 
    (1 - (phy.value / (cur.value + con.value))) * 100 AS buffer_cache_hit_ratio
 FROM 
@@ -25,6 +32,23 @@ WHERE
     AND phy.name = 'physical reads';
 
 -------------------------------
+
+SELECT
+    cur.value AS db_block_gets,
+    con.value AS consistent_gets,
+    phy.value AS physical_reads,
+    ROUND((1 - (phy.value / (cur.value + con.value))) * 100, 2) AS hit_ratio
+FROM 
+    v$sysstat cur,
+    v$sysstat con,
+    v$sysstat phy
+WHERE 
+    cur.name = 'db block gets'
+    AND con.name = 'consistent gets'
+    AND phy.name = 'physical reads';
+
+
+
 current mode
 consistent mode
 physical reads
