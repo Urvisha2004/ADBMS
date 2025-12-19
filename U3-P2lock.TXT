@@ -5,7 +5,15 @@ SET WRAP OFF
 
 
 session A
-SELECT * FROM artist WHERE usercode = 1 FOR UPDATE;
+SELECT * FROM artist WHERE usercode = 1 FOR UPDATE;(row -level)
+
+or 
+UPDATE artist SET artistname = artistname WHERE usercode = 1;(TX-row)
+or
+session 1:-LOCK TABLE artist IN EXCLUSIVE MODE;(TM-table)
+session 2:-UPDATE artist SET artistname = 'Test' WHERE usercode = 1;
+
+
 
 
   USERCODE USERNAME             EMAIL
@@ -57,6 +65,7 @@ JOIN
 WHERE 
     o.object_name = 'ARTIST'
     AND l.type IN ('TX','TM');
+
 
 
 
