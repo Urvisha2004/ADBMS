@@ -157,3 +157,64 @@ SELECT * FROM mystudents_dummy;
 Clean up
 TRUNCATE TABLE chained_rows;
 DROP TABLE mystudents_dummy;
+____________________________________________________________________________________________
+Query-1: Tablespace Free Space Fragmentation
+SELECT 
+    tablespace_name,
+    COUNT(*) AS free_extents,
+    SUM(blocks) AS total_free_blocks
+FROM 
+    dba_free_space
+GROUP BY 
+    tablespace_name;
+
+
+
+Query-2: Objects Having Too Many Extents
+SELECT 
+    owner,
+    segment_name,
+    segment_type,
+    extents
+FROM 
+    dba_segments
+WHERE 
+    extents > 20
+ORDER BY 
+    extents DESC;
+
+
+Query-3: Mixed Free and Used Extents (External Fragmentation)
+SELECT 
+    tablespace_name,
+    block_id,
+    blocks,
+    'FREE' AS status
+FROM 
+    dba_free_space
+UNION ALL
+SELECT 
+    tablespace_name,
+    block_id,
+    blocks,
+    'USED' AS status
+FROM 
+    dba_extents
+ORDER BY 
+
+
+________________________________
+🔹 1️⃣ Tablespace Fragmentation
+SELECT tablespace_name,
+       SUM(blocks) AS total_free_blocks,
+       MAX(blocks) AS largest_free_block
+FROM dba_free_space
+GROUP BY tablespace_name;
+
+
+🔹 2️⃣ Table / Object Fragmentation
+SELECT segment_name, segment_type, COUNT(*) AS num_extents
+FROM dba_extents
+GROUP BY segment_name, segment_type
+ORDER BY num_extents DESC;
+
