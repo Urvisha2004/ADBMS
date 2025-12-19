@@ -1,5 +1,30 @@
 select* from v$latch;
 
+-- Format output for readability
+SET PAGESIZE 100
+SET LINESIZE 150
+
+COLUMN name     FORMAT A35        HEADING 'Latch Name'
+COLUMN gets     FORMAT 999,999,999 HEADING 'GETS'
+COLUMN misses   FORMAT 999,999,999 HEADING 'MISSES'
+COLUMN sleeps   FORMAT 999,999,999 HEADING 'SLEEPS'
+COLUMN miss_pct FORMAT 999.99      HEADING 'MISS %'
+
+-- Query to identify latch contention
+SELECT
+    name,
+    gets,
+    misses,
+    sleeps,
+    ROUND((misses / DECODE(gets, 0, 1, gets)) * 100, 2) AS miss_pct
+FROM
+    v$latch
+WHERE
+    gets > 0
+ORDER BY
+    miss_pct DESC;
+
+
 
 cache buffers chains===	Protects access to buffer cache blocks
 library cache ===  Controls access to parsed SQL and PL/SQL code
@@ -45,11 +70,59 @@ ORDER BY misses DESC;
 
 ____________________________________________________________________________
 
+⭐ (A) Basic Latch Information
+SELECT * FROM v$latch;
+
+⭐ (B) List all latch names
+SELECT name FROM v$latch ORDER BY name;
+
+⭐ (C) Check latch statistics for specific latches
+SELECT gets, misses, name, sleep 
+FROM v$latch 
+WHERE name LIKE '%lru%';
+
+SELECT gets, misses, name, sleep 
+FROM v$latch 
+WHERE name LIKE '%redo%';
+
+SELECT gets, misses, name, sleep
+FROM v$latch 
+WHERE name LIKE '%chain%';
+
+⭐ (D) FORMATTED OUTPUT QUERY (Main Practical Answer)
+Formatting Columns
+SET PAGESIZE 100;
+SET LINESIZE 150;
+
+COLUMN name      FORMAT A35        HEADING 'Latch Name'
+COLUMN gets      FORMAT 999,999,999 HEADING 'GETS'
+COLUMN misses    FORMAT 999,999,999 HEADING 'MISSES'
+COLUMN sleeps    FORMAT 999,999,999 HEADING 'SLEEPS'
+COLUMN miss_pct  FORMAT 999.99      HEADING 'MISS %';
+
+Final Practical Query
+SELECT
+    name,
+    gets,
+    misses,
+    sleeps,
+    ROUND((misses / DECODE(gets, 0, 1, gets)) * 100, 2) AS miss_pct
+FROM
+    v$latch
+WHERE
+    name IN ('redo allocation',
+             'cache buffers lru chain',
+             'redo copy',
+             'library cache')
+ORDER BY
+    miss_pct DESC;
+
+⭐ (E) Universal Query – Top Latches by Miss %
 COLUMN latch_name FORMAT A30
-COLUMN gets FORMAT 9999999
-COLUMN misses FORMAT 999999
-COLUMN sleeps FORMAT 999999
-COLUMN pct_miss FORMAT 999.99
+COLUMN gets       FORMAT 9999999
+COLUMN misses     FORMAT 999999
+COLUMN sleeps     FORMAT 999999
+COLUMN pct_miss   FORMAT 999.99
 COLUMN pct_sleeps FORMAT 999.99
 
 SELECT
@@ -66,36 +139,24 @@ WHERE
 ORDER BY
    pct_miss DESC;
 
-
-
-
--- Set display formatting
-SET PAGESIZE 100
-SET LINESIZE 150
-SET VERIFY OFF
-SET FEEDBACK ON
-SET TRIMSPOOL ON
-
--- Format each column for better alignment
-COLUMN name        FORMAT A35       HEADING 'Latch Name'
-COLUMN gets        FORMAT 999,999,999 HEADING 'GETS'
-COLUMN misses      FORMAT 999,999,999 HEADING 'MISSES'
-COLUMN sleeps      FORMAT 999,999,999 HEADING 'SLEEPS'
-COLUMN miss_pct    FORMAT 999.99      HEADING 'MISS %'
-
--- Example query (adjust to your view/table)
-SET PAGESIZE 100
-SET LINESIZE 150
-SET VERIFY OFF
-SET FEEDBACK ON
-SET TRIMSPOOL ON
+⭐ (F) Example Output (Sample)
+Latch Name	GETS	MISSES	MISS %	SLEEPS
+cache buffers lru chain	2649995	198	0.01	0
+redo allocation	1035690	13690	0.13	0
+redo copy	755	0	0	0
+library cache	500000	23000	18	0
+⭐ (D) FORMATTED OUTPUT QUERY (Main Practical Answer)
+Formatting Columns
+SET PAGESIZE 100;
+SET LINESIZE 150;
 
 COLUMN name      FORMAT A35        HEADING 'Latch Name'
 COLUMN gets      FORMAT 999,999,999 HEADING 'GETS'
 COLUMN misses    FORMAT 999,999,999 HEADING 'MISSES'
 COLUMN sleeps    FORMAT 999,999,999 HEADING 'SLEEPS'
-COLUMN miss_pct  FORMAT 999.99      HEADING 'MISS %'
+COLUMN miss_pct  FORMAT 999.99      HEADING 'MISS %';
 
+Final Practical Query
 SELECT
     name,
     gets,
@@ -105,9 +166,116 @@ SELECT
 FROM
     v$latch
 WHERE
-    name IN ('redo allocation','cache buffers lru chain','redo copy','library cache')
+    name IN ('redo allocation',
+             'cache buffers lru chain',
+             'redo copy',
+             'library cache')
 ORDER BY
     miss_pct DESC;
+
+⭐ (E) Universal Query – Top Latches by Miss %
+COLUMN latch_name FORMAT A30
+COLUMN gets       FORMAT 9999999
+COLUMN misses     FORMAT 999999
+COLUMN sleeps     FORMAT 999999
+COLUMN pct_miss   FORMAT 999.99
+COLUMN pct_sleeps FORMAT 999.99
+
+SELECT
+   name AS latch_name,
+   gets,
+   misses,
+   ROUND((misses / DECODE(gets, 0, 1, gets)) * 100, 2) AS pct_miss,
+   sleeps,
+   ROUND((sleeps / DECODE(gets, 0, 1, gets)) * 100, 2) AS pct_sleeps
+FROM
+   v$latch
+WHERE
+   gets > 0
+ORDER BY
+   pct_miss DESC;
+
+⭐ (F) Example Output (Sample)
+Latch Name	GETS	MISSES	MISS %	SLEEPS
+cache buffers lru chain	2649995	198	0.01	0
+redo allocation	1035690	13690	0.13	0
+redo copy	755	0	0	0
+library cache	500000	23000	18	0⭐ (D) FORMATTED OUTPUT QUERY (Main Practical Answer)
+Formatting Columns
+SET PAGESIZE 100;
+SET LINESIZE 150;
+
+COLUMN name      FORMAT A35        HEADING 'Latch Name'
+COLUMN gets      FORMAT 999,999,999 HEADING 'GETS'
+COLUMN misses    FORMAT 999,999,999 HEADING 'MISSES'
+COLUMN sleeps    FORMAT 999,999,999 HEADING 'SLEEPS'
+COLUMN miss_pct  FORMAT 999.99      HEADING 'MISS %';
+
+Final Practical Query
+SELECT
+    name,
+    gets,
+    misses,
+    sleeps,
+    ROUND((misses / DECODE(gets, 0, 1, gets)) * 100, 2) AS miss_pct
+FROM
+    v$latch
+WHERE
+    name IN ('redo allocation',
+             'cache buffers lru chain',
+             'redo copy',
+             'library cache')
+ORDER BY
+    miss_pct DESC;
+
+⭐ (E) Universal Query – Top Latches by Miss %
+COLUMN latch_name FORMAT A30
+COLUMN gets       FORMAT 9999999
+COLUMN misses     FORMAT 999999
+COLUMN sleeps     FORMAT 999999
+COLUMN pct_miss   FORMAT 999.99
+COLUMN pct_sleeps FORMAT 999.99
+
+SELECT
+   name AS latch_name,
+   gets,
+   misses,
+   ROUND((misses / DECODE(gets, 0, 1, gets)) * 100, 2) AS pct_miss,
+   sleeps,
+   ROUND((sleeps / DECODE(gets, 0, 1, gets)) * 100, 2) AS pct_sleeps
+FROM
+   v$latch
+WHERE
+   gets > 0
+ORDER BY
+   pct_miss DESC;
+
+⭐ (F) Example Output (Sample)
+Latch Name	GETS	MISSES	MISS %	SLEEPS
+cache buffers lru chain	2649995	198	0.01	0
+redo allocation	1035690	13690	0.13	0
+redo copy	755	0	0	0
+library cache	500000	23000	18	0
+
+⭐ (H) How to Reduce Latch Contention
+1. Library Cache Latch
+ALTER SYSTEM FLUSH SHARED_POOL;
+
+VARIABLE v_id NUMBER
+EXEC :v_id := 1;
+SELECT * FROM student WHERE student_id = :v_id;
+
+
+2. Cache Buffers LRU Chain Latch
+
+SHOW PARAMETER db_cache_size;
+ALTER SYSTEM SET db_cache_size = 526M SCOPE=BOTH;
+
+3. Redo Allocation / Redo Copy Latch
+SHOW PARAMETER log_buffer;
+ALTER SYSTEM SET log_buffer = 33554432 SCOPE=SPFILE;
+
+
 _____________________________________________________________________________________
 
 KRISHA:-
@@ -237,3 +405,39 @@ WHERE name LIKE 'redo%';
 
 --increase log buffer size:
 ALTER SYSTEM SET log_buffer = 33554432 SCOPE=SPFILE;
+___________________________________________________________________
+mine
+
+SET LINESIZE 200
+SET PAGESIZE 100
+COLUMN LATCH_NAME FORMAT A35
+COLUMN GETS FORMAT 999999999
+COLUMN MISSES FORMAT 999999999
+COLUMN SLEEPS FORMAT 999999999
+COLUMN IMMEDIATE_GETS FORMAT 999999999
+COLUMN IMMEDIATE_MISSES FORMAT 999999999
+
+SELECT 
+    name AS latch_name,
+    gets,
+    misses,
+    immediate_gets,
+    immediate_misses,
+    sleeps
+FROM 
+    v$latch
+WHERE 
+    misses > 0 OR immediate_misses > 0
+ORDER BY 
+    misses DESC;
+
+LATCH_NAME                          GETS        MISSES   IMMEDIATE_GETS   IMMEDIATE_MISSES   SLEEPS
+----------------------------------- ----------- -------- ---------------- ------------------ --------
+cache buffers chains                543210      125      234567           10                 58
+shared pool                         898900       22       45678            3                 12
+library cache                       120000       15       23000            2                  5
+
+✅ Conclusion
+
+The above query helps in identifying latch contention in critical Oracle memory components like Shared Pool, Library Cache, and Buffer Cache.
+High values in MISSES, IMMEDIATE_MISSES, and SLEEPS indicate latch pressure, which may require memory tuning, SQL optimization, or reducing hard parses.
