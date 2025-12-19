@@ -1,0 +1,62 @@
+Step 1: Check Auditing Status
+SHOW PARAMETER audit_trail;
+
+If disabled, enable it:
+ALTER SYSTEM SET audit_trail=DB SCOPE=SPFILE;
+
+Step 2: Create Sample Table
+CREATE TABLE employee (
+    emp_id NUMBER,
+    emp_name VARCHAR2(50),
+    salary NUMBER
+);
+
+Step 3: Enable Auditing on Table
+AUDIT INSERT, UPDATE, DELETE ON employee;
+
+Step 4: Perform Operations
+INSERT INTO employee VALUES (1, 'Amit', 30000);
+UPDATE employee SET salary = 35000 WHERE emp_id = 1;
+DELETE FROM employee WHERE emp_id = 1;
+
+
+Step 5: View Audit Trail Records
+SELECT username,
+       action_name,
+       obj_name,
+       timestamp
+FROM user_audit_trail
+WHERE obj_name = 'EEE';
+
+
+Create Audit Table
+CREATE TABLE emp_audit (
+    user_name VARCHAR2(30),
+    operation VARCHAR2(10),
+    operation_date DATE
+);
+
+Create Trigger AGAIN (Correct Version)
+CREATE OR REPLACE TRIGGER emp_audit_trigger
+AFTER INSERT OR UPDATE OR DELETE ON eee
+FOR EACH ROW
+BEGIN
+    INSERT INTO emp_audit
+    VALUES (USER, 'DATA MODIFIED', SYSDATE);
+END;
+/
+
+Test the Trigger
+INSERT INTO eee VALUES (2, 'Rahul', 40000);
+UPDATE eee SET salary = 45000 WHERE emp_id = 2;
+DELETE FROM eee WHERE emp_id = 2;
+
+Step 6: View Audit Log
+SELECT * FROM emp_audit;
+
+
+✅ You will see rows like:
+
+USER_NAME   OPERATION        OPERATION_DATE
+----------  ---------------  ----------------
+MCA11       DATA MODIFIED    18-DEC-25
