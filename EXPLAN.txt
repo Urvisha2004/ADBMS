@@ -99,15 +99,11 @@ jaydip
 __________________________________________________________________________________________________________
 Practical-6
 -----------
-- Write a query to find out what will be the execution plan of the query.
-- Derive all the steps.
-
-
-EXPLAIN PLAN 
-SET STATEMENT_ID = 'StudentData'
-FOR 
+-- Assign Statement ID
+EXPLAIN PLAN SET STATEMENT_ID = 'StudentData' FOR
 SELECT * FROM student WHERE student_id > 5;
 
+-- Display execution plan using hierarchical query
 SELECT id, 
        statement_id,
        plan_id,
@@ -124,11 +120,68 @@ START WITH id = 0 AND statement_id = 'StudentData'
 CONNECT BY PRIOR id = parent_id 
 ORDER BY id;
 
-
+-- Optional: Clean up plan_table for next practical
 DELETE FROM plan_table;
 
+-- Format columns for readability
 COLUMN position FORMAT A20
 COLUMN object_alias FORMAT A20
 COLUMN object_name FORMAT A20
 COLUMN options FORMAT A30
 COLUMN operation FORMAT A20
+____________________________________________________________
+
+2. Using AUTOTRACE (SQL*Plus / SQL Developer)
+
+Shows execution plan and query statistics automatically.
+
+Steps:
+
+-- Enable AUTOTRACE
+SET AUTOTRACE ON
+
+-- Run your query
+SELECT student_name, marks
+FROM student
+WHERE subject = 'math' AND marks > 80;
+
+-- Optional: Turn off AUTOTRACE
+SET AUTOTRACE OFF
+
+
+Output:
+
+Query results
+
+Execution plan
+
+Performance statistics
+
+3. Using V$SQL_PLAN / V$SQL
+
+Shows execution plans for SQL statements already in the shared pool.
+
+Useful for analyzing frequently executed queries.
+
+Example:
+
+-- Find your SQL ID
+SELECT sql_id, sql_text
+FROM v$sql
+WHERE sql_text LIKE '%student%';
+
+-- See execution plan
+SELECT *
+FROM v$sql_plan
+WHERE sql_id = 'your_sql_id_here'
+ORDER BY id;
+
+
+________________________
+SELECT id,
+       operation,
+       options,
+       object_name,
+       cost
+FROM plan_table
+ORDER BY id;
